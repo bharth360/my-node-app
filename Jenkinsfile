@@ -26,7 +26,7 @@ pipeline {
             steps {
                 script {
                     // Build the frontend Docker image using the Dockerfile.frontend
-                    sh 'docker build -t my-node-app-frontend -f Dockerfile.frontend ./frontend'
+                    sh 'docker build -t my-node-app-frontend -f Dockerfile.frontend .'
                 }
             }
         }
