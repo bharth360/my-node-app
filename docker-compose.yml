@@ -3,35 +3,35 @@ version: "3.8"
 services:
   backend:
     build: ./backend
-    image: your-dockerhub-username/my-backend:latest
+    image: bharathms98/my-backend:latest
     restart: always
     depends_on:
       - postgres
       - redis
     environment:
-      DATABASE_URL: "postgres://postgres:password@postgres:5432/mydb"
+      DATABASE_URL: "postgres://postgres:MyStrongP@ss123@postgres:5432/mydb"
       REDIS_HOST: redis
     ports:
-      - "5000:5000"
+      - "5050:5000"  # Change the port if needed
 
   frontend:
     build: ./frontend
-    image: your-dockerhub-username/my-frontend:latest
+    image: bharathms98/my-frontend:latest
     restart: always
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "8080:3000"  # Change the port if needed
 
   postgres:
     image: postgres:15
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
+      POSTGRES_PASSWORD: MyStrongP@ss123  # Make sure this is a secure password
+      POSTGRES_DB: mydb  # This database will be automatically created
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data  # This ensures data persists across restarts
 
   redis:
     image: redis:latest
@@ -39,12 +39,12 @@ services:
 
   nginx:
     build: ./nginx
-    image: your-dockerhub-username/my-nginx:latest
+    image: bharathms98/my-nginx:latest
     restart: always
     depends_on:
       - frontend
     ports:
-      - "80:80"
+      - "80:80"  # Default port for HTTP
 
 volumes:
-  pgdata:
+  pgdata:  # Define volume for persistent PostgreSQL storage
