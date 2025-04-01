@@ -1,20 +1,50 @@
-version: '3'
+version: "3.8"
+
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.frontend
+  backend:
+    build: ./backend
+    image: your-dockerhub-username/my-backend:latest
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: "postgres://postgres:password@postgres:5432/mydb"
+      REDIS_HOST: redis
     ports:
-      - "80:80"
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    image: your-dockerhub-username/my-frontend:latest
+    restart: always
     depends_on:
       - backend
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.backend
     ports:
       - "3000:3000"
-    volumes:
-      - ./backend:/usr/src/app
+
+  postgres:
+    image: postgres:15
+    restart: always
     environment:
-      - NODE_ENV=production
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    restart: always
+
+  nginx:
+    build: ./nginx
+    image: your-dockerhub-username/my-nginx:latest
+    restart: always
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:
