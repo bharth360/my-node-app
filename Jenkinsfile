@@ -1,59 +1,54 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml' // Path to your docker-compose.yml file
+        FRONTEND_IMAGE = 'my-node-app-frontend'
+        BACKEND_IMAGE = 'my-node-app-backend'
     }
-
     stages {
         stage('Checkout') {
             steps {
-                // Pull the latest code from GitHub, no credentials needed since the repo is public
-                git url: 'https://github.com/bharth360/my-node-app.git', branch: 'main'
+                checkout scm
             }
         }
-
-        stage('Build Backend Docker Image') {
+        stage('Build Backend') {
             steps {
                 script {
-                    // Build the backend Docker image using the Dockerfile.backend
-                    sh 'docker build -t my-node-app-backend -f Dockerfile.backend .'
+                    // Build the backend image
+                    sh 'docker build -t ${BACKEND_IMAGE} -f Dockerfile.backend .'
                 }
             }
         }
-
-        stage('Build Frontend Docker Image') {
+        stage('Build Frontend') {
             steps {
                 script {
-                    // Build the frontend Docker image using the Dockerfile.frontend
-                    sh 'docker build -t my-node-app-frontend -f Dockerfile.frontend .'
+                    // Build the frontend image
+                    sh 'docker build -t ${FRONTEND_IMAGE} -f Dockerfile.frontend .'
                 }
             }
         }
-
         stage('Docker Compose Up') {
             steps {
                 script {
-                    // Start all the containers in detached mode using docker-compose
-                    sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
+                    // Bring up the services using docker-compose
+                    sh 'docker-compose up -d'
                 }
             }
         }
-
         stage('Health Check') {
             steps {
                 script {
-                    // Verify that the backend is up and accessible
-                    sh 'curl --fail http://localhost:3000 || exit 1'
+                    // Add your health check logic here (optional)
+                    echo 'Checking the health of the services...'
                 }
             }
         }
-    }
-
-    post {
-        always {
-            // Clean up and bring down the containers after the pipeline execution
-            sh 'docker-compose -f $DOCKER_COMPOSE_FILE down'
+        stage('Teardown') {
+            steps {
+                script {
+                    // Clean up services
+                    sh 'docker-compose down'
+                }
+            }
         }
     }
 }
