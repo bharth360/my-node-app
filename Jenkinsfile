@@ -1,67 +1,62 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_USER = 'bharathms98'  // Your Docker Hub username
-        DOCKER_HUB_PASSWORD = 'Bharath@98'  // Docker Hub password
+        AWS_REGION = 'us-east-1'  // Change to your AWS region
+        ECR_REPO = 'my-app-repo'
+        IMAGE_TAG = "nodejs-app:${env.BUILD_NUMBER}"
+        AWS_ACCOUNT_ID = '009160053341'
     }
-
     stages {
-        stage('Checkout') {
-            steps {
-                // Checkout the code from your GitHub repository
-                git 'https://github.com/bharathms98/my-node-app.git'  // Replace with your GitHub repository
-            }
-        }
-
-        stage('Build and Push Backend') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    // Build and push backend Docker image to Docker Hub
-                    sh "docker build -t bharathms98/my-backend:latest ./backend"
-                    sh "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin"
-                    sh "docker push bharathms98/my-backend:latest"
+                    git branch: 'main', 
+                        credentialsId: 'github-ssh', 
+                        url: 'git@github.com:bharth360/my-node-app.git'
                 }
             }
         }
 
-        stage('Build and Push Frontend') {
+        stage('Login to AWS ECR') {
             steps {
                 script {
-                    // Build and push frontend Docker image to Docker Hub
-                    sh "docker build -t bharathms98/my-frontend:latest ./frontend"
-                    sh "docker push bharathms98/my-frontend:latest"
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
                 }
             }
         }
 
-        stage('Build and Push Nginx') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Build and push nginx Docker image to Docker Hub
-                    sh "docker build -t bharathms98/my-nginx:latest ./nginx"
-                    sh "docker push bharathms98/my-nginx:latest"
+                    sh "docker build -t ${ECR_REPO}:${IMAGE_TAG} ."
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Tag Docker Image') {
             steps {
                 script {
-                    // Pull the latest images and restart services
-                    sh "docker-compose down"
-                    sh "docker-compose pull"
-                    sh "docker-compose up -d"
+                    sh "docker tag ${ECR_REPO}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
                 }
             }
         }
-    }
 
-    post {
-        failure {
-            // Send failure notification email if the pipeline fails
-            mail to: 'bharateshshanavad@gmail.com',  // Your email address
-                 subject: 'Deployment Failed',
-                 body: 'Check logs for details.'
+        stage('Push Image to ECR') {
+            steps {
+                script {
+                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Clean Up') {
+            steps {
+                script {
+                    sh "docker rmi ${ECR_REPO}:${IMAGE_TAG}"
+                    sh "docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+                }
+            }
         }
     }
 }
+
